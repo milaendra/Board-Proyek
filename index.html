@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tracker Tugas Proyek</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#172b4d;--mu:#6b778c;--bd:#dfe1e6;--ac:#0c66e4;--col:#ebecf0;--red:#c9372c;--ok:#1f845a;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d2125;--card:#22272b;--tx:#c7d1db;--mu:#8c9bab;--bd:#38414a;--ac:#579dff;--col:#161a1d;--red:#f87168;--ok:#4bce97;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1d2125;--card:#22272b;--tx:#c7d1db;--mu:#8c9bab;--bd:#38414a;--ac:#579dff;--col:#161a1d;--red:#f87168;--ok:#4bce97;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:12px 14px 4px}
+#ttl{font-size:20px;font-weight:700;border:1px solid transparent;background:transparent;color:var(--tx);width:100%;max-width:520px;padding:2px 6px;border-radius:4px}
+#ttl:hover,#ttl:focus{border-color:var(--bd);background:var(--card)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 14px}
+button,input,select,textarea{font:inherit;color:var(--tx)}
+input,select,textarea{background:var(--card);border:1px solid var(--bd);border-radius:5px;padding:6px 8px;width:100%}
+.bar input,.bar select{width:auto}
+button{background:var(--card);border:1px solid var(--bd);border-radius:5px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.dng{color:var(--red)}
+.mu{color:var(--mu);font-size:12px}
+#banner{padding:0 14px}
+.board{display:flex;gap:10px;overflow-x:auto;padding:8px 14px 28px;align-items:flex-start}
+.col{flex:0 0 255px;background:var(--col);border-radius:8px;padding:8px;min-height:90px}
+.col.ov{outline:2px dashed var(--ac)}
+.col h3{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);margin:2px 4px 8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:8px 9px;margin-bottom:8px;cursor:pointer}
+.card:hover{border-color:var(--ac)}
+.card b{font-weight:600;display:block;margin-bottom:5px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--mu)}
+.chip{background:var(--col);border-radius:4px;padding:1px 6px;color:var(--tx);font-size:11px}
+.av{width:22px;height:22px;border-radius:50%;background:var(--ac);color:#fff;display:inline-grid;place-items:center;font-size:11px;font-weight:700}
+.late{color:var(--red);font-weight:600}
+.add{width:100%;text-align:left;border:none;background:transparent;color:var(--mu);padding:4px}
+.tw{overflow-x:auto;padding:8px 14px 28px}
+table{border-collapse:collapse;width:100%;min-width:900px;background:var(--card)}
+th,td{border:1px solid var(--bd);padding:6px 8px;text-align:left;white-space:nowrap}
+th{background:var(--col);font-size:12px;color:var(--mu)}
+tr.r{cursor:pointer}tr.r:hover{background:var(--col)}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;z-index:9}
+#md{background:var(--bg);border-radius:10px;padding:16px;width:100%;max-width:720px}
+#md h2{margin:0 0 10px;font-size:17px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+label{display:block;font-size:12px;color:var(--mu);margin-bottom:2px}
+.sub{display:flex;gap:6px;align-items:center;margin:4px 0}.sub input[type=checkbox]{width:auto}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+</style></head><body>
+<header><input id="ttl" aria-label="Nama proyek"></header>
+<div class="bar">
+<button class="pri" id="bNew">+ Tugas</button>
+<input id="fq" placeholder="Cari tugas…" aria-label="Cari">
+<select id="fw" aria-label="Filter PIC"></select>
+<select id="fl" aria-label="Filter label"></select>
+<button id="bV">Tampilan: Board</button>
+<button id="bS">Pengaturan</button>
+<button id="bE">Ekspor / Impor</button>
+</div>
+<div class="bar mu" id="sum"></div>
+<div id="banner" class="mu"></div>
+<div id="main"></div>
+<div id="ov"><div id="md" role="dialog" aria-modal="true"></div></div>
+<script>
+const DEF={title:'Tracker Tugas Proyek',cols:['Backlog','To Do','In Progress','Review','Done','Hold','Cancelled'],members:['Aradea','Kamilah','Belgis','Zahra','Hasna'],labels:['Umum'],prios:['Tinggi','Sedang','Rendah']};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let cfg=JSON.parse(JSON.stringify(DEF)),tasks={},view='board',db=null,mode='local';
+const today=()=>new Date().toISOString().slice(0,10);
+const isDone=s=>/done|selesai/i.test(s),isProg=s=>/progress|dikerjakan/i.test(s);
+const key=t=>'T-'+String(t.num||0).padStart(3,'0');
+const dur=(a,b)=>a&&b?Math.round((new Date(b)-new Date(a))/864e5)+1+' hari':'–';
+// ---------- penyimpanan ----------
+function lsSave(){try{localStorage.setItem('trk',JSON.stringify({cfg,tasks}))}catch(e){}}
+function lsLoad(){try{const d=JSON.parse(localStorage.getItem('trk')||'null');if(d){cfg=Object.assign({},DEF,d.cfg);tasks=d.tasks||{}}}catch(e){}}
+function warn(e){$('#banner').textContent='Gagal menyimpan ke penyimpanan bersama ('+((e&&e.code)||'error')+'). Pastikan akunmu punya akses tulis.'}
+async function pCfg(){if(mode==='shared'){try{await db.doc('meta/config').set(cfg)}catch(e){warn(e)}}else lsSave()}
+async function pTask(t){tasks[t.id]=t;render();if(mode==='shared'){try{await db.doc('tasks/'+t.id).set(t)}catch(e){warn(e)}}else lsSave()}
+async function pDel(id){delete tasks[id];render();if(mode==='shared'){try{await db.doc('tasks/'+id).delete()}catch(e){warn(e)}}else lsSave()}
+// ---------- tampilan ----------
+function fill(sel,arr,first){const v=sel.value;sel.innerHTML='<option value="">'+first+'</option>'+arr.map(x=>'<option>'+esc(x)+'</option>').join('');sel.value=arr.includes(v)?v:''}
+function list(){const q=$('#fq').value.toLowerCase(),w=$('#fw').value,l=$('#fl').value;
+ return Object.values(tasks).filter(t=>(!w||t.who===w)&&(!l||t.label===l)&&(!q||(t.title+' '+t.desc+' '+key(t)).toLowerCase().includes(q))).sort((a,b)=>a.num-b.num)}
+function card(t){const late=t.due&&!isDone(t.status)&&t.due<today(),s=t.subs||[];
+ return `<div class="card" draggable="true" data-id="${t.id}"><b>${esc(t.title)||'(tanpa judul)'}</b><div class="row"><span>${key(t)}</span>${t.label?`<span class="chip">${esc(t.label)}</span>`:''}${t.prio?`<span class="chip">${esc(t.prio)}</span>`:''}${t.sp?`<span class="chip">${esc(t.sp)} SP</span>`:''}${s.length?`<span>☑ ${s.filter(x=>x.d).length}/${s.length}</span>`:''}</div><div class="row" style="margin-top:6px;justify-content:space-between"><span>${t.who?`<span class="av" title="${esc(t.who)}">${esc(t.who[0].toUpperCase())}</span> ${esc(t.who)}`:'Belum ada PIC'}</span>${t.due?`<span class="${late?'late':''}">${esc(t.due)}</span>`:''}</div></div>`}
+function render(){
+ $('#ttl').value=cfg.title;fill($('#fw'),cfg.members,'Semua PIC');fill($('#fl'),cfg.labels,'Semua label');
+ const L=list(),all=Object.values(tasks),done=all.filter(t=>isDone(t.status)),n=x=>x.reduce((a,t)=>a+(+t.sp||0),0),h=x=>x.reduce((a,t)=>a+(+t.act||0),0);
+ $('#sum').textContent=`${all.length} tugas · ${done.length} selesai${all.length?' ('+Math.round(done.length/all.length*100)+'%)':''} · SP ${n(done)}/${n(all)} · jam aktual ${h(all)}`;
+ $('#banner').textContent=mode==='shared'?'Data tersimpan bersama dan diperbarui langsung untuk semua anggota.':'Mode lokal: data hanya ada di browser ini. Gunakan Ekspor / Impor untuk memindahkan data.';
+ $('#bV').textContent='Tampilan: '+(view==='board'?'Board':'Tabel');
+ if(view==='board'){
+  $('#main').innerHTML='<div class="board">'+cfg.cols.map((c,i)=>{const cs=L.filter(t=>t.status===c||(i===0&&!cfg.cols.includes(t.status)));
+   return `<div class="col" data-c="${esc(c)}"><h3><span>${esc(c)}</span><span>${cs.length}</span></h3>${cs.map(card).join('')}<button class="add" data-add="${esc(c)}">+ Tambah tugas</button></div>`}).join('')+'</div>';
+ }else{
+  $('#main').innerHTML='<div class="tw"><table><tr>'+['ID','Judul','Status','PIC','Label','Prioritas','Sprint','SP','Est. jam','Jam aktual','Mulai','Tenggat','Selesai','Durasi'].map(x=>'<th>'+x+'</th>').join('')+'</tr>'+L.map(t=>`<tr class="r" data-id="${t.id}">${[key(t),t.title,t.status,t.who,t.label,t.prio,t.sprint,t.sp,t.est,t.act,t.start,t.due,t.done,dur(t.start,t.done)].map(x=>'<td>'+esc(x)+'</td>').join('')}</tr>`).join('')+'</table>'+(L.length?'':'<p class="mu">Belum ada tugas. Klik “+ Tugas” untuk mulai.</p>')+'</div>';
+ }}
+// ---------- modal ----------
+function open(html){$('#md').innerHTML=html;$('#ov').style.display='flex'}
+function close(){$('#ov').style.display='none';$('#md').innerHTML=''}
+const opt=(a,v,blank)=>(blank?'<option value=""></option>':'')+a.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
+const fld=(l,id,v,t)=>`<div><label for="${id}">${l}</label><input id="${id}" type="${t||'text'}" value="${esc(v)}"></div>`;
+const sel=(l,id,a,v,b)=>`<div><label for="${id}">${l}</label><select id="${id}">${opt(a,v,b)}</select></div>`;
+function openTask(id,pre){
+ const t=id?JSON.parse(JSON.stringify(tasks[id])):{id:'',title:'',desc:'',status:pre||cfg.cols[0],who:'',rep:'',label:'',prio:'Sedang',sprint:'',sp:'',est:'',act:'',start:'',due:'',done:'',link:'',subs:[],note:''};
+ const cols=cfg.cols.includes(t.status)?cfg.cols:[t.status].concat(cfg.cols);
+ open(`<h2>${id?key(t):'Tugas baru'}</h2>${fld('Judul','f_title',t.title)}<div style="margin:10px 0"><label for="f_desc">Deskripsi</label><textarea id="f_desc" rows="3">${esc(t.desc)}</textarea></div>
+ <div class="g">${sel('Status','f_status',cols,t.status)}${sel('PIC (yang menangani)','f_who',cfg.members,t.who,1)}${sel('Pelapor / pemberi tugas','f_rep',cfg.members,t.rep,1)}${sel('Label / bidang','f_label',cfg.labels,t.label,1)}${sel('Prioritas','f_prio',cfg.prios,t.prio,1)}${fld('Sprint','f_sprint',t.sprint)}</div>
+ <div class="g">${fld('Story point','f_sp',t.sp,'number')}${fld('Estimasi (jam)','f_est',t.est,'number')}${fld('Jam aktual','f_act',t.act,'number')}${fld('Tanggal mulai','f_start',t.start,'date')}${fld('Tenggat','f_due',t.due,'date')}${fld('Tanggal selesai','f_done',t.done,'date')}<div><label>Durasi</label><div id="f_dur" style="padding:6px 0">${dur(t.start,t.done)}</div></div></div>
+ ${fld('Tautan (Drive, Notion, dll.)','f_link',t.link)}
+ <div style="margin:10px 0"><label>Subtugas</label><div id="subs"></div><div class="sub"><input id="f_ns" placeholder="Tambah subtugas lalu tekan Enter"></div></div>
+ <div><label for="f_note">Catatan / kendala / umpan balik mitra</label><textarea id="f_note" rows="3">${esc(t.note)}</textarea></div>
+ <div class="acts">${id?'<button class="dng" id="x_del" style="margin-right:auto">Hapus</button>':''}<button id="x_c">Batal</button><button class="pri" id="x_s">Simpan</button></div>`);
+ const rs=()=>{$('#subs').innerHTML=t.subs.map((s,i)=>`<div class="sub"><input type="checkbox" data-i="${i}"${s.d?' checked':''}><span style="flex:1;${s.d?'text-decoration:line-through;color:var(--mu)':''}">${esc(s.t)}</span><button data-x="${i}">✕</button></div>`).join('')};rs();
+ $('#subs').onclick=e=>{const c=e.target.dataset;if(c.x!=null){t.subs.splice(+c.x,1);rs()}};
+ $('#subs').onchange=e=>{t.subs[+e.target.dataset.i].d=e.target.checked;rs()};
+ $('#f_ns').onkeydown=e=>{if(e.key==='Enter'&&e.target.value.trim()){t.subs.push({t:e.target.value.trim(),d:false});e.target.value='';rs()}};
+ const upd=()=>{$('#f_dur').textContent=dur($('#f_start').value,$('#f_done').value)};$('#f_start').onchange=upd;$('#f_done').onchange=upd;
+ $('#f_status').onchange=e=>{const s=e.target.value;if(isDone(s)&&!$('#f_done').value)$('#f_done').value=today();if(isProg(s)&&!$('#f_start').value)$('#f_start').value=today();upd()};
+ $('#x_c').onclick=close;
+ if(id)$('#x_del').onclick=()=>{if(confirm('Hapus tugas ini?')){pDel(id);close()}};
+ $('#x_s').onclick=()=>{const v=k=>$('#f_'+k).value;
+  const nums=Object.values(tasks).map(x=>x.num||0);
+  const o=Object.assign(t,{title:v('title').trim(),desc:v('desc'),status:v('status'),who:v('who'),rep:v('rep'),label:v('label'),prio:v('prio'),sprint:v('sprint'),sp:v('sp'),est:v('est'),act:v('act'),start:v('start'),due:v('due'),done:v('done'),link:v('link'),note:v('note'),updated:new Date().toISOString()});
+  if(!o.id){o.id='t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);o.num=Math.max(0,...nums)+1;o.created=o.updated}
+  pTask(o);close()};
+}
+function move(id,c){const t=tasks[id];if(!t||t.status===c)return;t.status=c;
+ if(isDone(c)&&!t.done)t.done=today();else if(!isDone(c))t.done='';
+ if(isProg(c)&&!t.start)t.start=today();t.updated=new Date().toISOString();pTask(t)}
+// ---------- pengaturan, ekspor/impor ----------
+function openSet(){
+ const ta=(l,id,a)=>`<div style="margin-bottom:10px"><label for="${id}">${l} (satu per baris)</label><textarea id="${id}" rows="${Math.max(3,a.length+1)}">${esc(a.join('\n'))}</textarea></div>`;
+ open(`<h2>Pengaturan</h2><p class="mu">Urutan kolom mengikuti urutan baris. Jika jumlah baris tidak berubah, nama yang diganti otomatis diterapkan ke tugas yang sudah ada. Kolom yang namanya mengandung “Done” atau “Selesai” dianggap kolom selesai.</p>${ta('Kolom status','s_cols',cfg.cols)}${ta('Anggota tim','s_mem',cfg.members)}${ta('Label / bidang','s_lab',cfg.labels)}${ta('Prioritas','s_pri',cfg.prios)}<div class="acts"><button id="x_c">Batal</button><button class="pri" id="x_s">Simpan</button></div>`);
+ $('#x_c').onclick=close;
+ $('#x_s').onclick=()=>{const g=id=>$(id).value.split('\n').map(x=>x.trim()).filter(Boolean),nc=g('#s_cols'),nm=g('#s_mem'),nl=g('#s_lab'),np=g('#s_pri');
+  if(!nc.length){alert('Minimal harus ada satu kolom.');return}
+  const re=(f,o,n)=>{if(o.length!==n.length)return;Object.values(tasks).forEach(t=>{const i=o.indexOf(t[f]);if(i>=0&&o[i]!==n[i]){t[f]=n[i];pTask(t)}})};
+  re('status',cfg.cols,nc);re('who',cfg.members,nm);re('rep',cfg.members,nm);re('label',cfg.labels,nl);re('prio',cfg.prios,np);
+  cfg.cols=nc;cfg.members=nm;cfg.labels=nl;cfg.prios=np;pCfg();render();close()}}
+const FIELDS=['num','title','status','who','rep','label','prio','sprint','sp','est','act','start','due','done','link','desc','note'];
+function csv(){const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+ return [FIELDS.concat('durasi','subtugas').map(q).join(',')].concat(Object.values(tasks).sort((a,b)=>a.num-b.num).map(t=>FIELDS.map(f=>q(t[f])).concat(q(dur(t.start,t.done)),q((t.subs||[]).map(s=>(s.d?'[x] ':'[ ] ')+s.t).join('; '))).join(','))).join('\n')}
+async function save(name,data){try{const d=await claude.use('downloads');if(d){await d.save({filename:name,data});return}}catch(e){}alert('Unduhan tidak tersedia. Salin teks dari kotak di dialog ini.')}
+function openIO(){
+ const json=JSON.stringify({cfg,tasks:Object.values(tasks)},null,1);
+ open(`<h2>Ekspor / Impor</h2><p class="mu">Cadangan lengkap berupa JSON. Tempel JSON ke kotak ini lalu klik Impor untuk memulihkan (menggantikan data saat ini).</p><textarea id="io" rows="10" style="font-family:monospace;font-size:12px">${esc(json)}</textarea><div class="acts"><button id="x_c" style="margin-right:auto">Tutup</button><button id="x_csv">Unduh CSV</button><button id="x_json">Unduh JSON</button><button class="pri" id="x_imp">Impor</button></div>`);
+ $('#x_c').onclick=close;$('#x_json').onclick=()=>save('tracker-tugas.json',json);$('#x_csv').onclick=()=>save('tracker-tugas.csv','\ufeff'+csv());
+ $('#x_imp').onclick=async()=>{try{const d=JSON.parse($('#io').value);if(!d.cfg||!Array.isArray(d.tasks))throw 0;if(!confirm('Ganti seluruh data dengan isi JSON ini?'))return;
+  Object.keys(tasks).forEach(id=>{if(!d.tasks.some(t=>t.id===id))pDel(id)});cfg=Object.assign({},DEF,d.cfg);await pCfg();d.tasks.forEach(pTask);close()}catch(e){alert('Format JSON tidak valid.')}}}
+// ---------- event ----------
+$('#bNew').onclick=()=>openTask();
+$('#bV').onclick=()=>{view=view==='board'?'table':'board';render()};
+$('#bS').onclick=openSet;$('#bE').onclick=openIO;
+['fq','fw','fl'].forEach(i=>$('#'+i).addEventListener('input',render));
+$('#ttl').onchange=e=>{cfg.title=e.target.value||DEF.title;document.title=cfg.title;pCfg()};
+$('#ov').onclick=e=>{if(e.target.id==='ov')close()};
+$('#main').onclick=e=>{const a=e.target.closest('[data-add]');if(a)return openTask(null,a.dataset.add);const c=e.target.closest('[data-id]');if(c)openTask(c.dataset.id)};
+$('#main').ondragstart=e=>{const c=e.target.closest('.card');if(c)e.dataTransfer.setData('text/plain',c.dataset.id)};
+$('#main').ondragover=e=>{const c=e.target.closest('.col');if(c){e.preventDefault();document.querySelectorAll('.ov').forEach(x=>x.classList.remove('ov'));c.classList.add('ov')}};
+$('#main').ondrop=e=>{const c=e.target.closest('.col');if(c){e.preventDefault();move(e.dataTransfer.getData('text/plain'),c.dataset.c)}};
+$('#main').ondragend=()=>document.querySelectorAll('.ov').forEach(x=>x.classList.remove('ov'));
+// ---------- mulai ----------
+lsLoad();render();
+(async()=>{try{if(!window.claude||!claude.use)return;db=await claude.use('db');if(!db)return;
+ mode='shared';tasks={};
+ db.doc('meta/config').onSnapshot(s=>{if(s.exists)cfg=Object.assign({},DEF,s.data());render()},()=>{mode='local';db=null;lsLoad();render()});
+ db.collection('tasks').onSnapshot(s=>{tasks={};s.docs.forEach(d=>tasks[d.id]=d.data());render()},()=>{mode='local';db=null;lsLoad();render()});
+}catch(e){mode='local';db=null}})();
+</script></body></html>
